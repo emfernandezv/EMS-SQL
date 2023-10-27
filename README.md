@@ -2,7 +2,7 @@
 I want to take my project out of the regular scope (projects available) by creating an SQL Script that will allow me to create a Dataware house from an ODBC Linked Server Connection. The application creates structures into a local database from an ODBC Connection, It will also alter the current tables to update the structure based on the ODBC Tables available. Additionally, will populate information into this tables to display a simple patient report.
 All the information displayed on the video is TEST DATA, none of this information is real.
 
-https://youtu.be/trWD9cFD3EE
+https://youtu.be/WjBbbiok0EE
 
 # Development Environment
 

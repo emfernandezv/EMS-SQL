@@ -100,7 +100,7 @@ BEGIN
 						THEN 'ALTER TABLE '+TABLE_NAME+' ADD '+COLUMN_NAME+' '+DATA_TYPE+'('+convert(varchar,CHARACTER_MAXIMUM_LENGTH)+') '+IS_NULLABLE+';'
 					WHEN isnull(NUMERIC_PRECISION,0) > 0 and  DATA_TYPE not in ('int') -- DATA_TYPE in ('decimal')
 						THEN 'ALTER TABLE '+TABLE_NAME+' ADD '+COLUMN_NAME+' '+DATA_TYPE+'('+convert(varchar,NUMERIC_PRECISION)+','+convert(varchar,NUMERIC_SCALE)+') '+IS_NULLABLE+';'
-					ELSE -- DATA_TYPE in ('int','datetime','bit','money','date','bigint','tinyint','smallint','smallmoney','smalldatetime')
+					ELSE -- DATA_TYPE in ('datetime','bit','money','date','bigint','tinyint','smallint','smallmoney','smalldatetime')
 						'ALTER TABLE '+TABLE_NAME+' ADD '+COLUMN_NAME+' '+DATA_TYPE+' '+IS_NULLABLE+';'
 				END
 
