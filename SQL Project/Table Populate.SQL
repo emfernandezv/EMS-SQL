@@ -12,12 +12,14 @@ SELECT @RunDate = GETDATE(),
   @LastRunDate = CONVERT(varchar(10), MAX(RunDate), 101)
 FROM ODBC_RunHistory
 
+--creates first entries ID if there is none
 IF @RunHistoryID IS NULL
   BEGIN 
     SET @RunHistoryID = 1
     SET @LastRunDate = '1/1/1900'
   END
 
+-- ot update the patients table
 SET @SQL = '
 UPDATE vw_ODBC_pt_PatientInfo
 SET LicenseKey = t.LicenseKey, 
@@ -99,6 +101,7 @@ SET LicenseKey = t.LicenseKey,
   PreferredMiddleName = t.PreferredMiddleName, 
   PreferredLastName = t.PreferredLastName,
   [SendApptReminderEmail] = t.[SendApptReminderEmail],
+  [SendApptReminderCall] = isnull(t.[SendApptReminderCall],0),
   [SendOnlineStatementText] = t.[SendOnlineStatementText],
   [SendOnlineStatementEmail] = t.[SendOnlineStatementEmail],
   [SendApptReminderToResponsibleParty] = t.[SendApptReminderToResponsibleParty],
@@ -106,7 +109,7 @@ SET LicenseKey = t.LicenseKey,
   [SendOtherEmail] = t.[SendOtherEmail],
   [SendOtherText] = t.[SendOtherText],
   [SendNotificationEmail] = t.[SendNotificationEmail],
-  [SendNotificationText] = t.[SendNotificationText]
+  [SendNotificationText] = isnull(t.[SendNotificationText],0)
 FROM vw_ODBC_pt_PatientInfo s
   INNER JOIN (SELECT * FROM OPENQUERY([OAK], ''SELECT * FROM vw_ODBC_pt_PatientInfo WHERE ChangedAt > ''''' + @LastRunDate + ''''''')) t
     ON s.Patient_UID = t.Patient_UID
@@ -114,7 +117,7 @@ FROM vw_ODBC_pt_PatientInfo s
 
   PRINT 'Starting to update data for vw_ODBC_pt_PatientInfo'
 
-  --Set the start time
+--Set the start time
   SET @DD = GETDATE()
 
 EXECUTE sp_executesql @SQL
@@ -133,6 +136,7 @@ EXECUTE sp_executesql @SQL
 
   PRINT 'Data update for vw_ODBC_pt_PatientInfo is done!'+ Char(13) + Char(10)
 
+  -- to insert new patients table
 SET @SQL = '
 INSERT INTO vw_ODBC_pt_PatientInfo (LicenseKey, 
     Patient_UID, 
@@ -211,7 +215,17 @@ INSERT INTO vw_ODBC_pt_PatientInfo (LicenseKey,
     TimeZoneFID, 
     PreferredFirstName, 
     PreferredMiddleName, 
-    PreferredLastName)
+    PreferredLastName,
+	[SendApptReminderEmail] ,
+  [SendOnlineStatementText],
+  [SendOnlineStatementEmail],
+  [SendApptReminderToResponsibleParty],
+  [SendApptReminderText],
+  [SendOtherEmail],
+  [SendOtherText],
+  [SendNotificationEmail],
+  [SendNotificationText],
+  [SendApptReminderCall])
   SELECT s.LicenseKey, 
     s.Patient_UID, 
     s.LastName, 
@@ -289,7 +303,17 @@ INSERT INTO vw_ODBC_pt_PatientInfo (LicenseKey,
     s.TimeZoneFID, 
     s.PreferredFirstName, 
     s.PreferredMiddleName, 
-    s.PreferredLastName
+    s.PreferredLastName,
+	s.[SendApptReminderEmail] ,
+  s.[SendOnlineStatementText],
+  s.[SendOnlineStatementEmail],
+  s.[SendApptReminderToResponsibleParty],
+  s.[SendApptReminderText],
+  s.[SendOtherEmail],
+  s.[SendOtherText],
+  s.[SendNotificationEmail],
+  isnull(s.[SendNotificationText],0),
+  isnull(s.[SendApptReminderCall],0)
   FROM (SELECT * FROM OPENQUERY([OAK], ''SELECT * FROM vw_ODBC_pt_PatientInfo WHERE CreatedAt > ''''' + @LastRunDate + ''''''')) s
   LEFT OUTER JOIN vw_ODBC_pt_PatientInfo t
     ON s.Patient_UID = t.Patient_UID
@@ -316,7 +340,8 @@ EXECUTE sp_executesql @SQL
   )
 
   PRINT 'Adding new data for vw_ODBC_pt_PatientInfo is done!'+ Char(13) + Char(10)
-
+  
+  -- ot update the appointments table
   SET @SQL = '
 UPDATE vw_ODBC_appts_Appointments
 SET LicenseKey = t.LicenseKey, 
@@ -390,7 +415,7 @@ EXECUTE sp_executesql @SQL
   )
 
   PRINT 'Data update for vw_ODBC_appts_Appointments is done!'+ Char(13) + Char(10)
-
+  -- ot insert new appointments data
 SET @SQL = '
 INSERT INTO vw_ODBC_appts_Appointments (LicenseKey, 
     Appointment_UID, 
@@ -511,53 +536,57 @@ EXECUTE sp_executesql @SQL
 
   PRINT 'Adding new data for vw_ODBC_appts_Appointments is done!'+ Char(13) + Char(10)
 
-  
+  -- ot update the providers table
+
 SET @SQL = '
-UPDATE vw_ODBC_mf_PGProviders
+UPDATE vw_ODBC_mf_PGProfiles
 SET LicenseKey = t.LicenseKey, 
-  Provider_UID = t.Provider_UID, 
-  LastName = t.LastName, 
-  FirstName = t.FirstName, 
-  MiddleName = t.MiddleName, 
-  Title = t.Title, 
-  Cell = t.Cell, 
-  Pager = t.Pager, 
-  HomePhone = t.HomePhone, 
-  Email = t.Email, 
+  Profile_UID = t.Profile_UID, 
+  ProfileCode = t.ProfileCode, 
+  [Description] = t.[Description], 
+  AptSte = t.AptSte, 
+  [Address] = t.[Address], 
+  ZipCode = t.ZipCode, 
+  City = t.City, 
+  [State] = t.[State], 
+  AreaCode = t.AreaCode, 
+  CountryCode = t.CountryCode, 
+  OfficePhone = t.OfficePhone, 
+  OfficeExtension = t.OfficeExtension, 
+  Fax = t.Fax, 
+  FacilityFID = t.FacilityFID, 
+  License = t.License, 
+  FederalID = t.FederalID, 
+  CLIANumber = t.CLIANumber, 
+  UserFileFID = t.UserFileFID, 
+  FeeScheduleFID = t.FeeScheduleFID, 
   FinancialSummaryFID = t.FinancialSummaryFID, 
   AccountReceivableFID = t.AccountReceivableFID, 
+  ProviderFID = t.ProviderFID, 
+  GroupFID = t.GroupFID, 
   PracticeFID = t.PracticeFID, 
-  [Type] = t.[Type], 
-  [Status] = t.[Status], 
-  IsInstitutional = t.IsInstitutional, 
-  PayScheduleFID = t.PayScheduleFID, 
-  InactiveAt = t.InactiveAt, 
-  InactiveBy = t.InactiveBy, 
+  ReferringProviderFID = t.ReferringProviderFID, 
+  StatementGroupFID = t.StatementGroupFID, 
   Display = t.Display, 
-  UPINNumber = t.UPINNumber, 
-  EMRAccess = t.EMRAccess, 
-  EMRActiveAt = t.EMRActiveAt, 
+  BillAsFID = t.BillAsFID, 
+  Taxonomy = t.Taxonomy, 
+  NPINumber = t.NPINumber, 
+  XRefIDsChangedAt = t.XRefIDsChangedAt, 
+  IsDefault = t.IsDefault, 
+  HideInChargeEntry = t.HideInChargeEntry, 
   CreatedBy = t.CreatedBy, 
   CreatedAt = t.CreatedAt, 
   ChangedBy = t.ChangedBy, 
   ChangedAt = t.ChangedAt, 
-  FullName = t.FullName, 
-  VerificationStatusFID = t.VerificationStatusFID, 
-  VerificationAttempt = t.VerificationAttempt, 
-  PreferredName = t.PreferredName, 
-  Specialty = t.Specialty, 
-  PreferredPhone = t.PreferredPhone, 
-  [Description] = t.[Description], 
-  HasOLSProfileImage = t.HasOLSProfileImage, 
-  ProviderTypeFID = t.ProviderTypeFID, 
-  PDMPConsentDate = t.PDMPConsentDate, 
-  PracticeOrganizationNameFID = t.PracticeOrganizationNameFID
-FROM vw_ODBC_mf_PGProviders s
-  INNER JOIN (SELECT * FROM OPENQUERY([OAK], ''SELECT * FROM vw_ODBC_mf_PGProviders WHERE ChangedAt > ''''' + @LastRunDate + ''''''')) t
-    ON s.Provider_UID = t.Provider_UID
+  CodeSetPreference = t.CodeSetPreference, 
+  DEANumber = t.DEANumber, 
+  NADEANumber = t.NADEANumber
+FROM vw_ODBC_mf_PGProfiles s
+  INNER JOIN (SELECT * FROM OPENQUERY([OAK], ''SELECT * FROM vw_ODBC_mf_PGProfiles WHERE ChangedAt > ''''' + @LastRunDate + ''''''')) t
+    ON s.Profile_UID = t.Profile_UID
     AND s.LicenseKey = t.LicenseKey'
 
-  PRINT 'Starting to update data for vw_ODBC_mf_PGProviders'
+  PRINT 'Starting to update data for vw_ODBC_mf_PGProfiles'
 
   --Set the start time
   SET @DD = GETDATE()
@@ -568,7 +597,7 @@ EXECUTE sp_executesql @SQL
   INSERT INTO ODBC_RunHistory VALUES(
     @RunHistoryID, 
     @RunDate, 
-    'vw_ODBC_mf_PGProviders', 
+    'vw_ODBC_mf_PGProfiles', 
     'U',
     @DD,
     GETDATE(),
@@ -576,92 +605,98 @@ EXECUTE sp_executesql @SQL
     @@ROWCOUNT
   )
 
-  PRINT 'Data update for vw_ODBC_mf_PGProviders is done!'+ Char(13) + Char(10)
+  PRINT 'Data update for vw_ODBC_mf_PGProfiles is done!'+ Char(13) + Char(10)
 
 SET @SQL = '
-INSERT INTO vw_ODBC_mf_PGProviders (LicenseKey, 
-    Provider_UID, 
-    LastName, 
-    FirstName, 
-    MiddleName, 
-    Title, 
-    Cell, 
-    Pager, 
-    HomePhone, 
-    Email, 
+INSERT INTO vw_ODBC_mf_PGProfiles (LicenseKey, 
+    Profile_UID, 
+    ProfileCode, 
+    [Description], 
+    AptSte, 
+    [Address], 
+    ZipCode, 
+    City, 
+    [State], 
+    AreaCode, 
+    CountryCode, 
+    OfficePhone, 
+    OfficeExtension, 
+    Fax, 
+    FacilityFID, 
+    License, 
+    FederalID, 
+    CLIANumber, 
+    UserFileFID, 
+    FeeScheduleFID, 
     FinancialSummaryFID, 
     AccountReceivableFID, 
+    ProviderFID, 
+    GroupFID, 
     PracticeFID, 
-    [Type], 
-    [Status], 
-    IsInstitutional, 
-    PayScheduleFID, 
-    InactiveAt, 
-    InactiveBy, 
+    ReferringProviderFID, 
+    StatementGroupFID, 
     Display, 
-    UPINNumber, 
-    EMRAccess, 
-    EMRActiveAt, 
+    BillAsFID, 
+    Taxonomy, 
+    NPINumber, 
+    XRefIDsChangedAt, 
+    IsDefault, 
+    HideInChargeEntry, 
     CreatedBy, 
     CreatedAt, 
     ChangedBy, 
     ChangedAt, 
-    FullName, 
-    VerificationStatusFID, 
-    VerificationAttempt, 
-    PreferredName, 
-    Specialty, 
-    PreferredPhone, 
-    [Description], 
-    HasOLSProfileImage, 
-    ProviderTypeFID, 
-    PDMPConsentDate, 
-    PracticeOrganizationNameFID)
+    CodeSetPreference, 
+    DEANumber, 
+    NADEANumber)
   SELECT s.LicenseKey, 
-    s.Provider_UID, 
-    s.LastName, 
-    s.FirstName, 
-    s.MiddleName, 
-    s.Title, 
-    s.Cell, 
-    s.Pager, 
-    s.HomePhone, 
-    s.Email, 
+    s.Profile_UID, 
+    s.ProfileCode, 
+    s.[Description], 
+    s.AptSte, 
+    s.[Address], 
+    s.ZipCode, 
+    s.City, 
+    s.[State], 
+    s.AreaCode, 
+    s.CountryCode, 
+    s.OfficePhone, 
+    s.OfficeExtension, 
+    s.Fax, 
+    s.FacilityFID, 
+    s.License, 
+    s.FederalID, 
+    s.CLIANumber, 
+    s.UserFileFID, 
+    s.FeeScheduleFID, 
     s.FinancialSummaryFID, 
     s.AccountReceivableFID, 
+    s.ProviderFID, 
+    s.GroupFID, 
     s.PracticeFID, 
-    s.[Type], 
-    s.[Status], 
-    s.IsInstitutional, 
-    s.PayScheduleFID, 
-    s.InactiveAt, 
-    s.InactiveBy, 
+    s.ReferringProviderFID, 
+    s.StatementGroupFID, 
     s.Display, 
-    s.UPINNumber, 
-    s.EMRAccess, 
-    s.EMRActiveAt, 
+    s.BillAsFID, 
+    s.Taxonomy, 
+    s.NPINumber, 
+    s.XRefIDsChangedAt, 
+    s.IsDefault, 
+    s.HideInChargeEntry, 
     s.CreatedBy, 
     s.CreatedAt, 
     s.ChangedBy, 
     s.ChangedAt, 
-    s.FullName, 
-    s.VerificationStatusFID, 
-    s.VerificationAttempt, 
-    s.PreferredName, 
-    s.Specialty, 
-    s.PreferredPhone, 
-    s.[Description], 
-    s.HasOLSProfileImage, 
-    s.ProviderTypeFID, 
-    s.PDMPConsentDate, 
-    s.PracticeOrganizationNameFID
-  FROM (SELECT * FROM OPENQUERY([OAK], ''SELECT * FROM vw_ODBC_mf_PGProviders WHERE CreatedAt > ''''' + @LastRunDate + ''''''')) s
-  LEFT OUTER JOIN vw_ODBC_mf_PGProviders t
-    ON s.Provider_UID = t.Provider_UID
+    s.CodeSetPreference, 
+    s.DEANumber, 
+    s.NADEANumber
+  FROM (SELECT * FROM OPENQUERY([OAK], ''SELECT * FROM vw_ODBC_mf_PGProfiles WHERE CreatedAt > ''''' + @LastRunDate + ''''''')) s
+  LEFT OUTER JOIN vw_ODBC_mf_PGProfiles t
+    ON s.Profile_UID = t.Profile_UID
     AND s.LicenseKey = t.LicenseKey
   WHERE t.LicenseKey IS NULL'
 
-  PRINT 'Starting to add new data for vw_ODBC_mf_PGProviders'
+  PRINT 'Starting to add new data for vw_ODBC_mf_PGProfiles'
 
   --Set the start time
   SET @DD = GETDATE()
@@ -672,7 +707,7 @@ EXECUTE sp_executesql @SQL
   INSERT INTO ODBC_RunHistory VALUES(
     @RunHistoryID, 
     @RunDate, 
-    'vw_ODBC_mf_PGProviders', 
+    'vw_ODBC_mf_PGProfiles', 
     'N',
     @DD,
     GETDATE(),
@@ -680,6 +715,6 @@ EXECUTE sp_executesql @SQL
     @@ROWCOUNT
   )
 
-  PRINT 'Adding new data for vw_ODBC_mf_PGProviders is done!'+ Char(13) + Char(10)
+  PRINT 'Adding new data for vw_ODBC_mf_PGProfiles is done!'+ Char(13) + Char(10)
 
   select * from ODBC_RunHistory

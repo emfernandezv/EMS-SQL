@@ -18,7 +18,7 @@ CREATE TABLE #ODBC_VIEWS (
 INSERT INTO #ODBC_VIEWS (view_name)
 	Select 'vw_ODBC_pt_PatientInfo'
 	UNION Select 'vw_ODBC_appts_Appointments'
-	UNION Select 'vw_ODBC_mf_PGProviders';
+	UNION Select 'vw_ODBC_mf_PGProfiles';
 
 --to control the updates
 IF OBJECT_ID (N'ODBC_RunHistory', N'U') IS NULL 
