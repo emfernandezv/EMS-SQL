@@ -1,6 +1,8 @@
 # SQL Dynamic Control Overview
-I want to take my project out of the regular scope (projects available) by creating an SQL Script that will allow me to create a Dataware house from an ODBC Linked Server Connection. The application creates structures into a local database from an ODBC Connection, It will also alter the current tables to update the structure based on the ODBC Tables available. Additionally, will populate information into this tables to display a simple patient report.
-All the information displayed on the video is TEST DATA, none of this information is real.
+
+Based on an ODBC Connection, the scripts will allow me to create local Dataware house. The application will also alter the current tables to update the structure based on the ODBC Tables available as source of truth. Additionally, will populate information into this tables to display a simple patient report.
+
+DISCLAIMER: All the information displayed on the video is TEST DATA, none of this information is real.
 
 https://youtu.be/WjBbbiok0EE
 
